@@ -38,7 +38,7 @@
   </footer>
 
   <script type="module" defer>
-    const response = await fetch('highspeedbrains-server.railway.internal/games')
+    const response = await fetch('http://highspeedbrains-server/games')
     const games = await response.json()
     const container = document.getElementById('game-list');
 
