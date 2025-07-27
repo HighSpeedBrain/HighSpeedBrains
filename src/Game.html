@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-white font-mono">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sudoku</title>
+    <link href="../Lib/tailwind.min.css" rel="stylesheet" />
+    <link rel="icon" href="../assets/favicon.ico" />
+    <style>
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        input[type=number] {
+            appearance: textfield;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-gray-50 text-gray-800">
+
+    <!-- ✅ FULL-WIDTH STICKY HEADER -->
+    <header class="bg-white shadow-md sticky top-0 z-10 w-full">
+        <div class="w-full max-w-4xl mx-auto flex items-center justify-between px-6 py-4">
+            <div class="flex items-center space-x-3">
+                <img src="../assets/favicon.ico" alt="Brain Rush Logo" class="w-10 h-10" />
+                <h1 id="GameName" class="text-2xl font-bold text-blue-700 tracking-tight">Sudoku</h1>
+            </div>
+            <button onclick="location.href='../'" class="text-sm text-blue-500 font-medium">
+                ← Back to Hub
+            </button>
+        </div>
+    </header>
+
+    <div id="gamecontainer">
+
+    </div>
+
+    <script type="module" defer>
+        const params = new URLSearchParams(window.location.search);
+        const game = params.get("game");
+
+        if (!game) {
+            document.getElementById("gamecontainer").textContent = "⚠️ No game specified.";
+            throw new Error("No game parameter in URL");
+        }
+
+        // Set the game name
+        document.getElementById("GameName").textContent =
+            game.charAt(0).toUpperCase() + game.slice(1);
+
+        try {
+            const response = await fetch(`/html/${game}.html`);
+            if (!response.ok) throw new Error("Failed to fetch game HTML");
+
+            const html = await response.text();
+            document.getElementById("gamecontainer").innerHTML = html;
+
+            // Optionally execute <script> tags from the loaded HTML
+            const temp = document.createElement("div");
+            temp.innerHTML = html;
+            temp.querySelectorAll("script").forEach(oldScript => {
+                const newScript = document.createElement("script");
+                if (oldScript.src) newScript.src = oldScript.src;
+                else newScript.textContent = oldScript.textContent;
+                document.body.appendChild(newScript);
+            });
+
+        } catch (err) {
+            document.getElementById("gamecontainer").textContent =
+                "⚠️ Failed to load game: " + err.message;
+            console.error(err);
+        }
+    </script>
+
+</body>
+
+</html>

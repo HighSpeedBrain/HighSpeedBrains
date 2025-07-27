@@ -1,0 +1,166 @@
+<main class="flex-grow flex justify-center pt-24 px-4 mt-4">
+  <div class="w-full max-w-xl flex flex-col items-center">
+
+    <div class="mb-4">
+      <label for="difficulty" class="mr-2 font-medium">Difficulty:</label>
+      <select id="difficulty" class="border px-2 py-1 rounded">
+        <option value="easy">Easy (9×9)</option>
+        <option value="medium" selected>Medium (9×9)</option>
+        <option value="hard">Hard (9×9)</option>
+      </select>
+    </div>
+
+    <div id="sudoku-grid" class="mb-6 grid gap-0 bg-black grid-cols-9"></div>
+
+    <div class="flex gap-4">
+      <button onclick="generateSudoku()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">New
+        Game</button>
+      <button onclick="checkSolution()"
+        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Check</button>
+    </div>
+
+    <p id="message" class="mt-4 text-lg font-medium text-center"></p>
+
+  </div>
+</main>
+
+<script>
+  const gridEl = document.getElementById("sudoku-grid");
+  const messageEl = document.getElementById("message");
+  let size = 9;
+  let puzzle = [];
+
+  function createGrid(size) {
+    gridEl.innerHTML = '';
+    gridEl.className = `grid mb-6 gap-0 bg-black grid-cols-${size}`;
+    const boxSize = Math.sqrt(size);
+
+    for (let i = 0; i < size * size; i++) {
+      const row = Math.floor(i / size);
+      const col = i % size;
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = 1;
+      input.max = size;
+      input.className = "w-10 h-10 text-center text-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400";
+
+      // Add THICK BORDERS for bold 3x3 lines
+      if (row % boxSize === 0) input.classList.add("border-t-4");
+      if (col % boxSize === 0) input.classList.add("border-l-4");
+      if (col === size - 1) input.classList.add("border-r-4");
+      if (row === size - 1) input.classList.add("border-b-4");
+
+      gridEl.appendChild(input);
+    }
+  }
+
+  function generateSudoku() {
+    const diff = document.getElementById("difficulty").value;
+    size = 9;
+    const holes = diff === "easy" ? 30 : diff === "hard" ? 50 : 40;
+
+    createGrid(size);
+    puzzle = generateFullGrid(size);
+
+    const puzzleWithHoles = [...puzzle];
+    let count = 0;
+    while (count < holes) {
+      const i = Math.floor(Math.random() * size * size);
+      if (puzzleWithHoles[i] !== 0) {
+        puzzleWithHoles[i] = 0;
+        count++;
+      }
+    }
+
+    const inputs = gridEl.querySelectorAll("input");
+    puzzleWithHoles.forEach((val, i) => {
+      if (val !== 0) {
+        inputs[i].value = val;
+        inputs[i].disabled = true;
+        inputs[i].classList.add("bg-gray-200");
+      }
+    });
+
+    messageEl.textContent = '';
+  }
+
+  function checkSolution() {
+    const inputs = gridEl.querySelectorAll("input");
+    const userGrid = [];
+    for (let input of inputs) {
+      const val = parseInt(input.value);
+      if (!val || val < 1 || val > size) {
+        messageEl.textContent = "❌ Invalid or missing numbers.";
+        return;
+      }
+      userGrid.push(val);
+    }
+
+    for (let i = 0; i < size; i++) {
+      const row = userGrid.slice(i * size, (i + 1) * size);
+      const col = userGrid.filter((_, idx) => idx % size === i);
+      const box = [];
+
+      const boxSize = Math.sqrt(size);
+      const r = Math.floor(i / boxSize) * boxSize;
+      const c = (i % boxSize) * boxSize;
+
+      for (let dr = 0; dr < boxSize; dr++) {
+        for (let dc = 0; dc < boxSize; dc++) {
+          box.push(userGrid[(r + dr) * size + (c + dc)]);
+        }
+      }
+
+      if (!isValidSet(row) || !isValidSet(col) || !isValidSet(box)) {
+        messageEl.textContent = "❌ Incorrect solution.";
+        return;
+      }
+    }
+
+    messageEl.textContent = "✅ Correct!";
+  }
+
+  function isValidSet(arr) {
+    return new Set(arr).size === size;
+  }
+
+  function generateFullGrid(n) {
+    const grid = Array(n * n).fill(0);
+    const boxSize = Math.sqrt(n);
+
+    function isValid(num, pos) {
+      const row = Math.floor(pos / n);
+      const col = pos % n;
+      for (let i = 0; i < n; i++) {
+        if (grid[row * n + i] === num || grid[i * n + col] === num) return false;
+      }
+      const startRow = Math.floor(row / boxSize) * boxSize;
+      const startCol = Math.floor(col / boxSize) * boxSize;
+      for (let r = 0; r < boxSize; r++) {
+        for (let c = 0; c < boxSize; c++) {
+          if (grid[(startRow + r) * n + (startCol + c)] === num) return false;
+        }
+      }
+      return true;
+    }
+
+    function solve(pos = 0) {
+      if (pos >= n * n) return true;
+      const nums = [...Array(n).keys()].map(x => x + 1).sort(() => Math.random() - 0.5);
+      for (let num of nums) {
+        if (isValid(num, pos)) {
+          grid[pos] = num;
+          if (solve(pos + 1)) return true;
+          grid[pos] = 0;
+        }
+      }
+      return false;
+    }
+
+    solve();
+    return grid;
+  }
+
+  generateSudoku();
+</script>

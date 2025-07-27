@@ -1,0 +1,15 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "bun.lock": true,
+    "**/.vscode": true,
+    "*.config.js":true,
+    "gulpfile.js":true,
+    "AppDebug.apk":true,
+    "**/Android":false,
+    "package.json":true,
+    "package-lock.json":true,
+    "BuildAndroid.ps1":true
+
+  }
+}

@@ -1,0 +1,171 @@
+
+  <style>
+    .mole {
+      background-color: #fef3c7;
+      font-size: 2rem;
+    }
+
+    .hole {
+      background-color: #d1d5db;
+    }
+  </style>
+
+  <main class="flex-grow px-4 sm:px-8 py-8 max-w-5xl mx-auto flex flex-col items-center">
+    <div class="text-center space-y-1 mb-6">
+      <div class="text-lg font-semibold">
+        ⏱️ Time: <span id="time">120</span>s &nbsp;|&nbsp; 🏆 Score: <span id="score">0</span>
+      </div>
+      <div class="text-sm text-gray-700">
+        ✅ Hits: <span id="hits">0</span> &nbsp;|&nbsp; ❌ Misses: <span id="misses">0</span>
+      </div>
+      <div class="text-sm text-gray-700">
+        🔁 Combo: <span id="combo">0</span> &nbsp;|&nbsp; ⚡ Speed: <span id="speed">800</span>ms
+      </div>
+    </div>
+
+    <div id="grid" class="grid grid-cols-3 gap-4 mb-6">
+      <!--Place Holder For The Mole Grid-->
+    </div>
+
+    <div class="flex gap-4">
+      <button onclick="startGame()" id="startBtn"
+        class="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 shadow-md">
+        🎮 Start Game
+      </button>
+      <button onclick="resetGame()" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-md">
+        🔄 Restart
+      </button>
+    </div>
+  </main>
+
+  <footer class="text-center text-sm text-gray-400 pb-6">
+    © 2025 Brain Rush — Keep your mind sharp
+  </footer>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const scoreEl = document.getElementById("score");
+    const timeEl = document.getElementById("time");
+    const comboEl = document.getElementById("combo");
+    const speedEl = document.getElementById("speed");
+    const hitsEl = document.getElementById("hits");
+    const missesEl = document.getElementById("misses");
+    const startBtn = document.getElementById("startBtn");
+
+    let score = 0
+    let time = 120
+    let gameTimer = null
+    let combo = 0
+    let baseDelay = 800
+    let currentDelay = baseDelay;
+    let hits = 0
+    let misses = 0;
+    let gameStarted = false;
+    const gridSize = 9;
+
+
+    function createGrid() {
+      grid.innerHTML = '';
+      for (let i = 0; i < gridSize; i++) {
+        const btn = document.createElement("button");
+        btn.className = "w-24 h-24 rounded-lg hole shadow-inner transition-all duration-100 text-2xl " + `${i}`;
+        btn.dataset.index = i;
+        btn.addEventListener("click", () => handleClick(btn));
+        grid.appendChild(btn);
+      }
+    }
+
+    function updateStats() {
+      scoreEl.textContent = Math.floor(score);
+      timeEl.textContent = time;
+      comboEl.textContent = combo;
+      speedEl.textContent = currentDelay;
+      hitsEl.textContent = hits;
+      missesEl.textContent = misses;
+    }
+
+    updateStats()
+
+    function spawnNewMole() {
+      const buttons = grid.querySelectorAll("button");
+      const moleLoc = Math.floor(Math.random() * (buttons.length))
+
+      buttons.forEach(btn => {
+
+        btn.classList.add("hole");
+        btn.classList.remove("mole");
+        btn.textContent = "";
+
+      })
+
+      const moleBtn = buttons[moleLoc]
+      if (!moleBtn) return;
+
+      moleBtn.classList.remove("hole");
+      moleBtn.classList.add("mole");
+      moleBtn.textContent = "🐹";
+    }
+
+
+    function handleClick(btn) {
+      if (btn.classList.contains("mole")) {
+        combo++;
+        hits++;
+        score += 1 + combo * 0.1;
+        currentDelay = Math.max(0, currentDelay - 50);
+      } else {
+        score = Math.max(0, score - 1);
+        combo = 0;
+        misses++;
+        time = Math.max(0, time - 2);
+        currentDelay = Math.min(1200, currentDelay + 100);
+      }
+      updateStats();
+    }
+
+    let moleTimeout = null;
+
+    function spawnMoleLoop() {
+      spawnNewMole();
+
+      moleTimeout = setTimeout(() => {
+        spawnMoleLoop(); // re-run with updated delay
+      }, currentDelay);
+    }
+
+    function startGame() {
+      resetGame();
+      updateStats();
+      gameStarted = true;
+      createGrid()
+
+      spawnMoleLoop(); // start mole spawner
+
+      gameTimer = setInterval(() => {
+        time--;
+        updateStats();
+
+        if (time == 0) {
+          clearInterval(gameTimer);
+          clearTimeout(moleTimeout);
+          alert(`⏰ Time's up! Final score: ${Math.floor(score)}`);
+          resetGame()
+          }
+      }, 1000);
+    }
+
+
+
+    //the fuck man, who wrote this piece of crap
+
+    function resetGame() {
+      time = 120;
+      score = 0;
+      combo = 0;
+      hits = 0;
+      misses = 0;
+      currentDelay = baseDelay;
+      updateStats();
+      grid.innerHTML=''
+    }
+  </script>
