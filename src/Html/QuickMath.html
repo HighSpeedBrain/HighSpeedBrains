@@ -1,0 +1,156 @@
+
+  <style>
+    button {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+  </style>
+  <!-- Main content -->
+  <main class="flex-grow flex justify-center mt-6 px-4">
+    <div class="w-full max-w-xl flex flex-col items-center text-center">
+      <p class="mb-4 text-gray-700">Solve fast arithmetic under pressure!</p>
+
+      <!-- Timer Bar -->
+      <div class="w-full bg-gray-300 rounded-full h-2.5 mb-2 max-w-xs">
+        <div id="timeBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-linear w-full"></div>
+      </div>
+
+      <!-- Scoreboard -->
+      <div class="flex flex-wrap justify-between gap-2 mb-6 text-center">
+        <div class="text-lg font-semibold text-green-700 hidden">Correct: <span id="correct">0</span></div>
+        <div class="text-lg font-semibold text-blue-700">Score: <span id="score">0</span></div>
+        <div class="text-lg font-semibold text-yellow-600">High Score: <span id="highscore">0</span></div>
+        <div class="text-lg font-semibold text-gray-900">Time Left: <span id="time">10</span>s</div>
+        <div class="text-lg font-semibold text-red-600">Wrong: <span id="wrong">0</span></div>
+      </div>
+
+      <div id="question" class="text-3xl font-bold text-purple-700 mb-4"></div>
+      <div id="choices" class="grid grid-cols-2 gap-4 mb-6 w-full max-w-xs hidden"></div>
+      <button id="startBtn" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none">
+        Start Game
+      </button>
+    </div>
+  </main>
+
+
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const scoreEl = document.getElementById("score");
+    const highscoreEl = document.getElementById("highscore");
+    const timeEl = document.getElementById("time");
+    const questionEl = document.getElementById("question");
+    const choicesEl = document.getElementById("choices");
+    const correctEl = document.getElementById("correct");
+    const wrongEl = document.getElementById("wrong");
+    const timeBar = document.getElementById("timeBar");
+
+    let score = 0;
+    let correct = 0;
+    let wrong = 0;
+    let time = 10;
+    let timer = null;
+    let correctAnswer = null;
+
+    let highScore = localStorage.getItem("quickmath_highscore") || 0;
+    highscoreEl.textContent = highScore;
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function getDifficultyLevel() {
+      return Math.min(20 + Math.floor(correct / 5) * 10, 100);
+    }
+
+    function generateQuestion() {
+      const max = getDifficultyLevel();
+      let a = getRandomInt(1, max);
+      let b = getRandomInt(1, max);
+      let op = ["+", "-", "×"][getRandomInt(0, 2)];
+
+      if (op === "-" && b > a) [a, b] = [b, a]; // Prevent negative result
+
+      let answer;
+      if (op === "+") answer = a + b;
+      else if (op === "-") answer = a - b;
+      else answer = a * b;
+
+      correctAnswer = answer;
+      questionEl.textContent = `${a} ${op} ${b}`;
+
+      const options = new Set([answer]);
+      while (options.size < 4) {
+        const fake = answer + getRandomInt(-15, 15);
+        if (fake !== answer) options.add(fake);
+      }
+
+      const shuffled = [...options].sort(() => Math.random() - 0.5);
+      choicesEl.innerHTML = "";
+      shuffled.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.className = "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none";
+        btn.onclick = () => checkAnswer(opt);
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(selected) {
+      if (selected === correctAnswer) {
+        score++;
+        correct++;
+      } else {
+        wrong++;
+      }
+      updateStats();
+      generateQuestion();
+    }
+
+    function updateStats() {
+      scoreEl.textContent = score;
+      correctEl.textContent = correct;
+      wrongEl.textContent = wrong;
+    }
+
+    function startGame() {
+      score = 0;
+      correct = 0;
+      wrong = 0;
+      time = 10;
+      updateStats();
+      timeEl.textContent = time;
+      timeBar.style.width = "100%";
+      startBtn.classList.add("hidden");
+      choicesEl.classList.remove("hidden");
+      generateQuestion();
+      clearInterval(timer);
+      timer = setInterval(() => {
+        time--;
+        timeEl.textContent = time;
+        timeBar.style.width = `${(time / 10) * 100}%`;
+        if (time <= 0) {
+          clearInterval(timer);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      questionEl.textContent = "Time’s up!";
+      choicesEl.classList.add("hidden");
+      startBtn.textContent = "Play Again";
+      startBtn.classList.remove("hidden");
+
+      // Update high score if beaten
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("quickmath_highscore", highScore);
+        highscoreEl.textContent = highScore;
+      }
+    }
+
+    startBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>

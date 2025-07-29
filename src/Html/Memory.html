@@ -1,0 +1,171 @@
+  <style>
+    .flip-card {
+      perspective: 1000px;
+    }
+
+    .flip-inner {
+      transform-style: preserve-3d;
+      transition: transform 0.4s ease;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .flipped .flip-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+      backface-visibility: hidden;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border-radius: 0.5rem;
+    }
+
+    .card-front {
+      transform: rotateY(180deg);
+    }
+  </style>
+
+  <main class="flex-grow flex flex-col items-center mt-6 px-4">
+    <p class="mb-2 text-gray-700">Find all matching pairs with the least moves!</p>
+
+    <div class="mb-4 flex gap-4" id="difficultyButtons">
+      <button data-diff="easy" class="px-4 py-2 bg-gray-300 text-black rounded">Easy</button>
+      <button data-diff="medium" class="px-4 py-2 bg-blue-600 text-white rounded">Medium</button>
+      <button data-diff="hard" class="px-4 py-2 bg-gray-300 text-black rounded">Hard</button>
+    </div>
+
+    <button id="startBtn" class="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+      ▶️ Start Game
+    </button>
+
+    <div id="moveContainer" class="mb-2 text-lg font-semibold hidden">
+      Moves: <span id="moves">0</span>
+    </div>
+
+    <div id="game" class="grid gap-3 max-w-lg mx-auto mb-6 hidden"></div>
+
+    <button id="restartBtn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 hidden">
+      🔁 Restart Game
+    </button>
+  </main>
+  <script>
+    const emojisList = ['🍎','🍌','🍇','🍓','🍍','🥝','🍉','🍑','🥥','🍒','🍋','🥭'];
+    const gameContainer = document.getElementById('game');
+    const moveCounter = document.getElementById('moves');
+    const moveBox = document.getElementById('moveContainer');
+    const diffBtns = document.querySelectorAll('#difficultyButtons button');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let flippedCards = [];
+    let matched = 0;
+    let moves = 0;
+    let difficulty = "medium";
+    let totalPairs = 8;
+    let columns = 4;
+
+    const settings = {
+      easy: { pairs: 6, cols: 3 },
+      medium: { pairs: 8, cols: 4 },
+      hard: { pairs: 12, cols: 6 }
+    };
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function startGame() {
+      matched = 0;
+      moves = 0;
+      flippedCards = [];
+      moveCounter.textContent = '0';
+      moveBox.classList.remove('hidden');
+      gameContainer.innerHTML = '';
+      gameContainer.classList.remove('hidden');
+      restartBtn.classList.remove('hidden');
+      startBtn.classList.add('hidden');
+      gameContainer.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+
+      const chosen = emojisList.slice(0, totalPairs);
+      const cards = [...chosen, ...chosen];
+      shuffle(cards);
+
+      cards.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.className = 'flip-card w-16 h-16 relative cursor-pointer';
+        card.innerHTML = `
+          <div class="flip-inner">
+            <div class="card-front bg-blue-500 text-white">${emoji}</div>
+            <div class="card-back bg-gray-300"></div>
+          </div>
+        `;
+        card.dataset.emoji = emoji;
+        card.dataset.index = index;
+
+        card.addEventListener('click', () => {
+          if (card.classList.contains('flipped') || flippedCards.length === 2) return;
+
+          card.classList.add('flipped');
+          flippedCards.push(card);
+
+          if (flippedCards.length === 2) {
+            moves++;
+            moveCounter.textContent = moves;
+            const [first, second] = flippedCards;
+            if (first.dataset.emoji === second.dataset.emoji) {
+              matched += 2;
+              flippedCards = [];
+              if (matched === totalPairs * 2) {
+                setTimeout(() => alert(`🎉 Completed in ${moves} moves!`), 200);
+              }
+            } else {
+              setTimeout(() => {
+                first.classList.remove('flipped');
+                second.classList.remove('flipped');
+                flippedCards = [];
+              }, 700);
+            }
+          }
+        });
+
+        gameContainer.appendChild(card);
+      });
+    }
+
+    function setDifficulty(level) {
+      difficulty = level;
+      totalPairs = settings[level].pairs;
+      columns = settings[level].cols;
+
+      diffBtns.forEach(btn => {
+        if (btn.dataset.diff === level) {
+          btn.classList.remove("bg-gray-300", "text-black");
+          btn.classList.add("bg-blue-600", "text-white");
+        } else {
+          btn.classList.remove("bg-blue-600", "text-white");
+          btn.classList.add("bg-gray-300", "text-black");
+        }
+      });
+    }
+
+    // Initial setup
+    diffBtns.forEach(btn =>
+      btn.addEventListener("click", () => setDifficulty(btn.dataset.diff))
+    );
+
+    startBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", startGame);
+
+    setDifficulty("medium");
+  </script>
+

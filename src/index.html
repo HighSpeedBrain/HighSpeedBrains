@@ -4,22 +4,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="./Lib/tailwind.min.css" rel="stylesheet" media="all"/>
+  <link href="https://ubybdwgcbacnuduecaoa.supabase.co/storage/v1/object/public/gameassets/tailwind.min.css"
+    rel="stylesheet" media="all" />
   <title>Brain Rush</title>
-  <link rel="icon" href="/assets/favicon.ico" />
+  <link rel="icon"
+    href="https://ubybdwgcbacnuduecaoa.supabase.co/storage/v1/object/public/gameassets/Images/favicon.webp" />
   <style>
     button {
       -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;
     }
   </style>
+
+
 </head>
 
 <body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex flex-col">
   <!-- Header -->
   <header class="bg-white shadow-md py-4 px-6 flex items-center justify-between sticky top-0 z-10">
     <div class="flex items-center space-x-3">
-      <img src="./assets/favicon.ico" alt="Brain Rush Logo" class="w-10 h-10" />
+      <img src="https://ubybdwgcbacnuduecaoa.supabase.co/storage/v1/object/public/gameassets/Images/favicon.webp"
+        alt="Brain Rush Logo" class="w-10 h-10" />
       <h1 class="text-2xl font-bold text-blue-700 tracking-tight">Brain Rush</h1>
     </div>
     <p class="hidden sm:block text-sm text-gray-400 font-medium">Train your brain with fun challenges</p>
@@ -37,9 +42,45 @@
     © 2025 Brain Rush — Keep your mind sharp
   </footer>
 
-  <script type="module" defer>
-    const response = await fetch('https://highspeedbrains-server-production-520e.up.railway.app/games')
-    const games = await response.json()
+  <script type="module">
+    import { Capacitor } from 'https://cdn.jsdelivr.net/npm/@capacitor/core@7.4.2/+esm';
+    import { cacheHTML, getCachedHTML } from './utils/cacheutil.js'
+
+    let data;
+    const url = "https://ubybdwgcbacnuduecaoa.supabase.co/storage/v1/object/public/gameassets/gamedata.json"
+
+    if (Capacitor.isNativePlatform()) {
+      const { Network } = await import('https://cdn.jsdelivr.net/npm/@capacitor/network@7.0.1/+esm');
+      const { Toast } = await import('https://cdn.jsdelivr.net/npm/@capacitor/toast@7.0.1/+esm');
+      const { ScreenOrientation } = await import('https://cdn.jsdelivr.net/npm/@capacitor/screen-orientation@7.0.1/+esm');
+      await ScreenOrientation.lock({ orientation: 'portrait' });
+
+      const status = await Network.getStatus()
+      console.log('Network status changed', status);
+      await Toast.show({
+        text: `Network: ${status.connected ? 'Online' : 'Offline'}`,
+      });
+      if (status.connected) {
+        data = await (await fetch(url)).json()
+        cacheHTML(url)
+      } else {
+        if (getCachedHTML(url) != null) {
+          data = await getCachedHTML(url)
+        } else {
+          data = {}
+        }
+      }
+
+      ;
+
+      // Show current network status as a toast
+
+
+    }
+    data = await (await fetch(url)).json()
+
+    console.log(data)
+    const games = data
     const container = document.getElementById('game-list');
 
     games.forEach(game => {
@@ -67,6 +108,8 @@
       container.appendChild(card);
     });
   </script>
+
+
 </body>
 
 </html>

@@ -1,0 +1,126 @@
+
+  <style>
+    *:focus { outline: none !important; }
+    button { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; border: none; }
+    .selected { background-color: #2563eb !important; color: white !important; }
+    .unselected { background-color: #d1d5db !important; color: black !important; }
+  </style>
+  <!-- Main -->
+  <main class="flex-grow flex justify-center px-4 mt-6" tabindex="-1">
+    <div class="w-full max-w-xl bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
+      <p class="mb-4 text-gray-700 text-center">Tap the <span class="font-semibold text-blue-600">font color</span> &mdash; not the word!</p>
+
+      <div class="flex gap-4 mb-6" id="difficulty-buttons">
+        <button class="difficulty-btn px-4 py-2 rounded-xl unselected" data-level="easy">Easy</button>
+        <button class="difficulty-btn px-4 py-2 rounded-xl selected" data-level="medium">Medium</button>
+        <button class="difficulty-btn px-4 py-2 rounded-xl unselected" data-level="hard">Hard</button>
+      </div>
+
+      <div class="flex justify-between items-center w-full px-4 mb-4">
+        <div id="timer" class="text-lg font-semibold text-gray-900 hidden">⏱ Time Left: <span id="time"></span>s</div>
+        <div id="score" class="text-lg font-semibold text-green-700">🏆 Score: <span id="score-val">0</span></div>
+      </div>
+
+      <div id="word-display" class="text-4xl font-bold mb-6 hidden">Color</div>
+
+      <button id="start-btn" class="mb-6 px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700">Play Game</button>
+
+      <div id="color-buttons" class="grid grid-cols-2 gap-4 mb-6 hidden"></div>
+
+      <button id="reset-btn" class="mb-6 px-6 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 hidden">Reset Game</button>
+
+      <div id="result" class="text-sm text-blue-600 font-semibold"></div>
+    </div>
+  </main>
+
+
+  <script>
+    const startBtn = document.getElementById("start-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const timerEl = document.getElementById("timer");
+    const timeSpan = document.getElementById("time");
+    const wordDisplay = document.getElementById("word-display");
+    const colorButtonsDiv = document.getElementById("color-buttons");
+    const resultText = document.getElementById("result");
+    const difficultyButtons = document.querySelectorAll(".difficulty-btn");
+    const difficultyWrapper = document.getElementById("difficulty-buttons");
+    const scoreVal = document.getElementById("score-val");
+
+    const COLORS = {
+      easy: ["Red", "Green", "Blue", "Yellow"],
+      medium: ["Red", "Green", "Blue", "Yellow", "Orange", "Pink", "Teal", "Purple"],
+      hard: ["Red", "Green", "Blue", "Yellow", "Orange", "Pink", "Teal", "Purple", "Brown", "Cyan", "Lime", "Magenta"]
+    };
+    const ROUND_COUNT = { easy: 8, medium: 10, hard: 12 };
+    const TIME_FACTOR = 0.9;
+
+    let currentDifficulty = "medium";
+    let interval, totalTime, currentRound, score;
+    let correctColor;
+
+    difficultyButtons.forEach(btn => btn.addEventListener('click', () => {
+      difficultyButtons.forEach(b => { b.classList.remove('selected'); b.classList.add('unselected'); });
+      btn.classList.remove('unselected'); btn.classList.add('selected');
+      currentDifficulty = btn.dataset.level;
+    }));
+
+    function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+    function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function startGame() {
+      difficultyWrapper.classList.add('hidden');
+      startBtn.classList.add('hidden');
+      resetBtn.classList.remove('hidden');
+      colorButtonsDiv.classList.remove('hidden');
+      timerEl.classList.remove('hidden');
+      wordDisplay.classList.remove('hidden');
+      resultText.textContent = '';
+      score = 0; currentRound = 0; scoreVal.textContent = score;
+      totalTime = Math.floor(ROUND_COUNT[currentDifficulty] * TIME_FACTOR);
+      timeSpan.textContent = totalTime;
+      renderColorButtons(); nextRound();
+      interval = setInterval(() => {
+        totalTime--; timeSpan.textContent = totalTime;
+        if (totalTime <= 0) endGame("⏰ Time's up!");
+      }, 1000);
+    }
+
+    function renderColorButtons() {
+      const colors = shuffle([...COLORS[currentDifficulty]]).slice(0, 8);
+      colorButtonsDiv.innerHTML = '';
+      colors.forEach(color => {
+        const btn = document.createElement('button'); btn.textContent = color;
+        btn.className = 'text-white font-bold py-2 px-4 rounded-xl shadow'; btn.style.backgroundColor = color.toLowerCase();
+        btn.addEventListener('click', () => checkAnswer(color)); colorButtonsDiv.appendChild(btn);
+      });
+    }
+
+    function nextRound() {
+      currentRound++;
+      if (currentRound > ROUND_COUNT[currentDifficulty]) return endGame('✅ Completed all rounds!');
+      const opts = COLORS[currentDifficulty];
+      const word = getRandom(opts); correctColor = getRandom(opts);
+      wordDisplay.textContent = word; wordDisplay.style.color = correctColor.toLowerCase();
+    }
+
+    function checkAnswer(selected) {
+      if (totalTime <= 0) return;
+      if (selected === correctColor) {
+        score++; scoreVal.textContent = score;
+        resultText.innerHTML = '<span class="text-green-600">✔ Correct!</span>';
+      } else {
+        resultText.innerHTML = '<span class="text-red-600">✖ Wrong!</span>';
+      }
+      setTimeout(nextRound, 300);
+    }
+
+    function endGame(msg) {
+      clearInterval(interval);
+      timerEl.classList.add('hidden'); wordDisplay.classList.add('hidden'); colorButtonsDiv.classList.add('hidden');
+      startBtn.classList.remove('hidden'); resetBtn.classList.add('hidden'); difficultyWrapper.classList.remove('hidden');
+      resultText.textContent = msg;
+    }
+
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', () => endGame('🔁 Game reset.'));
+  </script>

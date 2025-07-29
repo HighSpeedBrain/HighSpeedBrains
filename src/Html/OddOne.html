@@ -1,0 +1,187 @@
+<style>
+.shape {
+  width: 80px;
+  height: 80px;
+  border-radius: 0.5rem;
+  opacity: 0.95;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+    .shape:hover {
+      transform: scale(1.05);
+    }
+    .correct {
+      outline: 3px solid green;
+    }
+    .wrong {
+      outline: 3px solid red;
+      opacity: 0.4;
+    }
+    #shapes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+  </style>
+
+<div class=" font-sans text-gray-900  flex flex-col items-center">
+
+  <main class="flex-grow flex flex-col items-center justify-center py-6 w-full max-w-3xl pt-10">
+    <div class="mb-4 text-center">
+      <p class="text-gray-700">Find and click the shape that is different!</p>
+      <p class="text-sm mt-1 text-blue-600">Score: <span id="score">0</span> | High Score: <span id="highScore">0</span> | Time Left: <span id="timer">300</span>s</p>
+    </div>
+
+    <div class="mb-4">
+      <label for="difficulty" class="mr-2 font-medium text-sm">Difficulty:</label>
+      <select id="difficulty" class="border px-3 py-1 rounded">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+
+<div id="shapes" class="flex flex-wrap justify-center items-center gap-3 max-w-3xl mx-auto px-2"></div>
+
+    <button id="nextBtn" class="hidden mt-6 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Next Round</button>
+  </main>
+  <script>
+    const shapesContainer = document.getElementById("shapes");
+    const nextBtn = document.getElementById("nextBtn");
+    const difficultySelect = document.getElementById("difficulty");
+    const scoreDisplay = document.getElementById("score");
+    const highScoreDisplay = document.getElementById("highScore");
+    const timerDisplay = document.getElementById("timer");
+
+    const shapeTypes = ["square", "circle"];
+    const colors = ["#ef4444", "#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899"];
+
+    let totalShapes = 6;
+    let score = 0;
+    let highScore = localStorage.getItem("oddOneHighScore") || 0;
+    let timer;
+    let timeLeft = 300;
+
+    highScoreDisplay.textContent = highScore;
+
+    function getDifficultySettings() {
+      const level = difficultySelect.value;
+      if (level === "easy") return { total: 6, subtle: false };
+      if (level === "medium") return { total: 9, subtle: true };
+      return { total: 12, subtle: true };
+    }
+
+    function randomFrom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function updateScoreDisplay() {
+      scoreDisplay.textContent = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("oddOneHighScore", highScore);
+        highScoreDisplay.textContent = highScore;
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timeLeft = 120;
+      timerDisplay.textContent = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          alert("Time's up! Your final score is " + score);
+          score = 0;
+          updateScoreDisplay();
+          generateShapes();
+        }
+      }, 1000);
+    }
+
+    function generateShapes() {
+      shapesContainer.innerHTML = "";
+      nextBtn.classList.add("hidden");
+
+      const { total, subtle } = getDifficultySettings();
+      totalShapes = total;
+
+      const baseColor = randomFrom(colors);
+      const baseType = randomFrom(shapeTypes);
+
+      let oddColor = baseColor;
+      let oddType = baseType;
+
+      if (subtle) {
+        const shadeOffset = Math.random() > 0.5 ? 15 : -15;
+        oddColor = shadeColor(baseColor, shadeOffset);
+      } else {
+        while (oddColor === baseColor) {
+          oddColor = randomFrom(colors);
+        }
+        while (oddType === baseType) {
+          oddType = randomFrom(shapeTypes);
+        }
+      }
+
+      const oddIndex = Math.floor(Math.random() * total);
+
+      for (let i = 0; i < total; i++) {
+        const div = document.createElement("div");
+        div.className = `shape bg-white shadow`;
+        const type = i === oddIndex ? oddType : baseType;
+        const color = i === oddIndex ? oddColor : baseColor;
+        div.style.backgroundColor = color;
+        div.style.borderRadius = type === "circle" ? "50%" : "0.5rem";
+
+        div.addEventListener("click", () => {
+          if (i === oddIndex) {
+            div.classList.add("correct");
+            nextBtn.classList.remove("hidden");
+            score++;
+            updateScoreDisplay();
+          } else {
+            div.classList.add("wrong");
+            score = Math.max(0, score - 1);
+            updateScoreDisplay();
+          }
+        });
+
+        shapesContainer.appendChild(div);
+      }
+    }
+
+    function shadeColor(color, percent) {
+      const f = parseInt(color.slice(1), 16),
+            t = percent < 0 ? 0 : 255,
+            p = Math.abs(percent) / 100,
+            R = f >> 16,
+            G = f >> 8 & 0x00FF,
+            B = f & 0x0000FF;
+      return "#" + (
+        0x1000000 +
+        (Math.round((t - R) * p) + R) * 0x10000 +
+        (Math.round((t - G) * p) + G) * 0x100 +
+        (Math.round((t - B) * p) + B)
+      ).toString(16).slice(1);
+    }
+
+    nextBtn.addEventListener("click", generateShapes);
+    difficultySelect.addEventListener("change", () => {
+      generateShapes();
+      resetTimer();
+    });
+
+    generateShapes();
+    resetTimer();
+  </script>
+</div>

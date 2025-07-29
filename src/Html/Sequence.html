@@ -1,0 +1,149 @@
+  <style>
+    .box {
+      width: 80px;
+      height: 80px;
+      border-radius: 0.5rem;
+      margin: 0.5rem;
+      opacity: 0.8;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .highlight {
+      outline: 3px solid white;
+      box-shadow: 0 0 20px 6px rgba(0, 0, 0, 0.5);
+      transform: scale(1.1);
+      opacity: 1;
+    }
+    .click-feedback {
+      outline: 2px solid black;
+    }
+  </style>
+<div class=" font-sans text-gray-900 flex flex-col items-center">
+
+  <main class="flex-grow flex flex-col items-center justify-center py-6 w-full max-w-3xl">
+    <div class="mb-6 text-center">
+      <p class="text-gray-700">Memorize the sequence and repeat it!</p>
+      <div class="mt-2 text-sm text-gray-500">
+        Correct: <span id="correct">0</span> | Wrong: <span id="wrong">0</span>
+      </div>
+    </div>
+
+    <div id="grid" class="flex flex-wrap justify-center max-w-xs"></div>
+    <p id="turnIndicator" class="mt-4 text-blue-600 text-lg font-semibold hidden">Your Turn! Tap the sequence</p>
+
+    <div class="mt-6 flex space-x-4">
+      <button id="startBtn" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Start Game</button>
+      <select id="difficulty" class="border px-3 py-2 rounded">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+  </main>
+
+
+  <script>
+    const colors = ["#ef4444", "#22c55e", "#3b82f6", "#eab308", "#a855f7", "#f97316", "#14b8a6", "#ec4899", "#84cc16", "#6366f1"];
+    let sequence = [], playerSequence = [], clickable = false;
+    let correct = 0, wrong = 0, gridSize = 4;
+
+    const grid = document.getElementById("grid");
+    const correctEl = document.getElementById("correct");
+    const wrongEl = document.getElementById("wrong");
+    const turnIndicator = document.getElementById("turnIndicator");
+
+    function getDifficultyCount() {
+      const level = document.getElementById("difficulty").value;
+      return level === "easy" ? 4 : level === "medium" ? 6 : 8;
+    }
+
+    function generateGrid(count) {
+      grid.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const div = document.createElement("div");
+        div.className = `box`;
+        div.style.backgroundColor = colors[i];
+        div.dataset.index = i;
+        div.addEventListener("click", () => {
+          if (!clickable) return;
+          handleClick(i);
+        });
+        grid.appendChild(div);
+      }
+    }
+
+    function flash(index) {
+      const box = grid.children[index];
+      box.classList.add("highlight");
+      setTimeout(() => {
+        box.classList.remove("highlight");
+      }, 500);
+    }
+
+    function playClickSound() {
+      const audio = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_8c3e387181.mp3?filename=click-124467.mp3");
+      audio.play();
+    }
+
+    function playSequence() {
+      clickable = false;
+      turnIndicator.classList.add("hidden");
+      let i = 0;
+      const interval = setInterval(() => {
+        flash(sequence[i]);
+        i++;
+        if (i >= sequence.length) {
+          clearInterval(interval);
+          clickable = true;
+          turnIndicator.classList.remove("hidden");
+        }
+      }, 800);
+    }
+
+    function nextRound() {
+      const next = Math.floor(Math.random() * gridSize);
+      sequence.push(next);
+      playSequence();
+    }
+
+    function handleClick(i) {
+      playClickSound();
+      const box = grid.children[i];
+      box.classList.add("click-feedback");
+      setTimeout(() => box.classList.remove("click-feedback"), 150);
+
+      playerSequence.push(i);
+      const currentStep = playerSequence.length - 1;
+      if (playerSequence[currentStep] !== sequence[currentStep]) {
+        wrong++;
+        resetGame(false);
+        return;
+      }
+      if (playerSequence.length === sequence.length) {
+        correct++;
+        updateScore();
+        playerSequence = [];
+        setTimeout(nextRound, 1000);
+      }
+    }
+
+    function updateScore() {
+      correctEl.textContent = correct;
+      wrongEl.textContent = wrong;
+    }
+
+    function resetGame(full = true) {
+      clickable = false;
+      turnIndicator.classList.add("hidden");
+      sequence = [];
+      playerSequence = [];
+      if (full) correct = wrong = 0;
+      updateScore();
+      gridSize = getDifficultyCount();
+      generateGrid(gridSize);
+      setTimeout(nextRound, 500);
+    }
+
+    document.getElementById("startBtn").addEventListener("click", () => resetGame());
+  </script>
+</div>
